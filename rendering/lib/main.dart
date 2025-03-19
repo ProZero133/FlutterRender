@@ -79,7 +79,13 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> pokemonList = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'eevee'];
+    final List<String> pokemonList = [
+      'pikachu',
+      'bulbasaur',
+      'charmander',
+      'squirtle',
+      'eevee'
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -94,15 +100,15 @@ class HomePage extends StatelessWidget {
                 border: TableBorder.all(),
                 children: [
                   TableRow(children: [
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
+                    Container(
+                      margin: const EdgeInsets.all(8),
+                      child: const Text(
                         'Habilidad actual',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
+                    Container(
+                      margin: const EdgeInsets.all(8),
                       child: Text(currentAbilityName!),
                     ),
                   ]),
@@ -164,10 +170,8 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => Center(
-                      child: ManualAbilityPage(
-                        onUpdateAbilityName: onUpdateAbilityName,
-                      ),
+                    builder: (context) => ManualAbilityPage(
+                      onUpdateAbilityName: onUpdateAbilityName,
                     ),
                   ),
                 );
@@ -240,10 +244,9 @@ class AbilityPageState extends State<AbilityPage> {
       appBar: AppBar(
         title: const Text('Detalles de la habilidad'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const CircularProgressIndicator()
             : _abilityData != null
                 ? _abilityData!['error'] != null
                     ? Text(
@@ -254,28 +257,28 @@ class AbilityPageState extends State<AbilityPage> {
                         border: TableBorder.all(),
                         children: [
                           TableRow(children: [
-                            const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              child: const Text(
                                 'Nombre',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
+                            Container(
+                              margin: const EdgeInsets.all(8),
                               child: Text(_abilityData!['name']),
                             ),
                           ]),
                           TableRow(children: [
-                            const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              child: const Text(
                                 'Efecto',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
+                            Container(
+                              margin: const EdgeInsets.all(8),
                               child: Text(
                                 (_abilityData!['effect_entries'] as List)
                                     .firstWhere(
@@ -344,8 +347,7 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
       appBar: AppBar(
         title: const Text('Buscar habilidad manualmente'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -379,28 +381,28 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
                       border: TableBorder.all(),
                       children: [
                         TableRow(children: [
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
+                          Container(
+                            margin: const EdgeInsets.all(8),
+                            child: const Text(
                               'Nombre',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
+                          Container(
+                            margin: const EdgeInsets.all(8),
                             child: Text(_abilityData!['name']),
                           ),
                         ]),
                         TableRow(children: [
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text(
+                          Container(
+                            margin: const EdgeInsets.all(8),
+                            child: const Text(
                               'Efecto',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
+                          Container(
+                            margin: const EdgeInsets.all(8),
                             child: Text(
                               (_abilityData!['effect_entries'] as List)
                                   .firstWhere(
