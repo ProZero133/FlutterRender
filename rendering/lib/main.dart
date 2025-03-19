@@ -3,17 +3,17 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(MyApp());
+  runApp(PokeApiAPP());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class PokeApiAPP extends StatefulWidget {
+  const PokeApiAPP({super.key});
 
   @override
-  MyAppState createState() => MyAppState();
+  PokeApiAPPState createState() => PokeApiAPPState();
 }
 
-class MyAppState extends State<MyApp> {
+class PokeApiAPPState extends State<PokeApiAPP> {
   String? _currentPokemonName;
   List<dynamic>? _currentPokemonAbilities;
   String? _currentAbilityName;
@@ -215,7 +215,7 @@ class AbilityPageState extends State<AbilityPage> {
         setState(() {
           _abilityData = data;
         });
-        widget.onUpdateAbilityName(data['name']); // Update the ability name in the parent
+        widget.onUpdateAbilityName(data['name']);
       } else {
         setState(() {
           _abilityData = {'error': 'Error al obtener la información'};
@@ -324,7 +324,7 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
         setState(() {
           _abilityData = data;
         });
-        widget.onUpdateAbilityName(data['name']); // Update the ability name in the parent
+        widget.onUpdateAbilityName(data['name']); 
       } else {
         setState(() {
           _abilityData = {'error': 'Error al obtener la información'};
