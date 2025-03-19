@@ -10,10 +10,10 @@ class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState();
+  MyAppState createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class MyAppState extends State<MyApp> {
   String? _currentPokemonName;
   List<dynamic>? _currentPokemonAbilities;
   String? _currentAbilityName;
@@ -192,10 +192,10 @@ class AbilityPage extends StatefulWidget {
   });
 
   @override
-  _AbilityPageState createState() => _AbilityPageState();
+  AbilityPageState createState() => AbilityPageState();
 }
 
-class _AbilityPageState extends State<AbilityPage> {
+class AbilityPageState extends State<AbilityPage> {
   bool _isLoading = false;
   Map<String, dynamic>? _abilityData;
 
@@ -300,10 +300,10 @@ class ManualAbilityPage extends StatefulWidget {
   const ManualAbilityPage({super.key, required this.onUpdateAbilityName});
 
   @override
-  _ManualAbilityPageState createState() => _ManualAbilityPageState();
+  ManualAbilityPageState createState() => ManualAbilityPageState();
 }
 
-class _ManualAbilityPageState extends State<ManualAbilityPage> {
+class ManualAbilityPageState extends State<ManualAbilityPage> {
   bool _isLoading = false;
   Map<String, dynamic>? _abilityData;
   final TextEditingController _controller = TextEditingController();
