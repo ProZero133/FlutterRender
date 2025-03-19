@@ -14,29 +14,322 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isLoading = false;
-  Map<String, dynamic>? _pokemonData;
+  String? _currentPokemonName;
+  List<dynamic>? _currentPokemonAbilities;
+  String? _currentAbilityName;
 
-  Future<void> _fetchPokemonData() async {
+  void updatePokemon(String name, List<dynamic> abilities) {
+    setState(() {
+      _currentPokemonName = name;
+      _currentPokemonAbilities = abilities;
+    });
+  }
+
+  void updateAbilityName(String name) {
+    setState(() {
+      _currentAbilityName = name;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: HomePage(
+        currentPokemonName: _currentPokemonName,
+        currentPokemonAbilities: _currentPokemonAbilities,
+        currentAbilityName: _currentAbilityName,
+        onUpdatePokemon: updatePokemon,
+        onUpdateAbilityName: updateAbilityName,
+      ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  final String? currentPokemonName;
+  final List<dynamic>? currentPokemonAbilities;
+  final String? currentAbilityName;
+  final Function(String, List<dynamic>) onUpdatePokemon;
+  final Function(String) onUpdateAbilityName;
+
+  const HomePage({
+    super.key,
+    required this.currentPokemonName,
+    required this.currentPokemonAbilities,
+    required this.currentAbilityName,
+    required this.onUpdatePokemon,
+    required this.onUpdateAbilityName,
+  });
+
+  Future<void> fetchPokemonData(String pokemonName) async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://pokeapi.co/api/v2/pokemon/$pokemonName'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        onUpdatePokemon(
+          data['name'],
+          data['abilities'],
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching Pokémon data: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> pokemonList = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'eevee'];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pokeapi'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (currentAbilityName != null)
+              Table(
+                border: TableBorder.all(),
+                children: [
+                  TableRow(children: [
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                        'Habilidad actual',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(currentAbilityName!),
+                    ),
+                  ]),
+                ],
+              )
+            else
+              const Text('No se ha seleccionado ninguna habilidad'),
+            const SizedBox(height: 20),
+            const Text(
+              'Selecciona un Pokémon:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              children: pokemonList.map((pokemon) {
+                return ElevatedButton(
+                  onPressed: () => fetchPokemonData(pokemon),
+                  child: Text(pokemon),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            if (currentPokemonName != null)
+              Column(
+                children: [
+                  Text(
+                    'Habilidades de $currentPokemonName:',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  if (currentPokemonAbilities != null)
+                    Wrap(
+                      spacing: 10,
+                      children: currentPokemonAbilities!.map((ability) {
+                        return ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AbilityPage(
+                                  abilityUrl: ability['ability']['url'],
+                                  onUpdateAbilityName: onUpdateAbilityName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(ability['ability']['name']),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              )
+            else
+              const Text('No se ha seleccionado ningún Pokémon'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Center(
+                      child: ManualAbilityPage(
+                        onUpdateAbilityName: onUpdateAbilityName,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Ir a la página de habilidades'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AbilityPage extends StatefulWidget {
+  final String abilityUrl;
+  final Function(String) onUpdateAbilityName;
+
+  const AbilityPage({
+    super.key,
+    required this.abilityUrl,
+    required this.onUpdateAbilityName,
+  });
+
+  @override
+  _AbilityPageState createState() => _AbilityPageState();
+}
+
+class _AbilityPageState extends State<AbilityPage> {
+  bool _isLoading = false;
+  Map<String, dynamic>? _abilityData;
+
+  Future<void> fetchAbilityData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.get(Uri.parse(widget.abilityUrl));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _abilityData = data;
+        });
+        widget.onUpdateAbilityName(data['name']); // Update the ability name in the parent
+      } else {
+        setState(() {
+          _abilityData = {'error': 'Error al obtener la información'};
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _abilityData = {'error': 'Error al obtener la información'};
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAbilityData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detalles de la habilidad'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _abilityData != null
+                ? _abilityData!['error'] != null
+                    ? Text(
+                        _abilityData!['error'],
+                        style: const TextStyle(color: Colors.red),
+                      )
+                    : Table(
+                        border: TableBorder.all(),
+                        children: [
+                          TableRow(children: [
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text(
+                                'Nombre',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(_abilityData!['name']),
+                            ),
+                          ]),
+                          TableRow(children: [
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text(
+                                'Efecto',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                (_abilityData!['effect_entries'] as List)
+                                    .firstWhere(
+                                      (entry) =>
+                                          entry['language']['name'] == 'en',
+                                      orElse: () => {'effect': 'No data'},
+                                    )['effect'],
+                              ),
+                            ),
+                          ]),
+                        ],
+                      )
+                : const Text('No se encontraron datos'),
+      ),
+    );
+  }
+}
+
+class ManualAbilityPage extends StatefulWidget {
+  final Function(String) onUpdateAbilityName;
+
+  const ManualAbilityPage({super.key, required this.onUpdateAbilityName});
+
+  @override
+  _ManualAbilityPageState createState() => _ManualAbilityPageState();
+}
+
+class _ManualAbilityPageState extends State<ManualAbilityPage> {
+  bool _isLoading = false;
+  Map<String, dynamic>? _abilityData;
+  final TextEditingController _controller = TextEditingController();
+
+  Future<void> fetchAbilityData(String idOrName) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       final response =
-          await http.get(Uri.parse('https://pokeapi.co/api/v2/pokemon/ditto'));
+          await http.get(Uri.parse('https://pokeapi.co/api/v2/ability/$idOrName'));
       if (response.statusCode == 200) {
+        final data = json.decode(response.body);
         setState(() {
-          _pokemonData = json.decode(response.body);
+          _abilityData = data;
         });
+        widget.onUpdateAbilityName(data['name']); // Update the ability name in the parent
       } else {
         setState(() {
-          _pokemonData = {'error': 'Failed to fetch data'};
+          _abilityData = {'error': 'Error al obtener la información'};
         });
       }
     } catch (e) {
       setState(() {
-        _pokemonData = {'error': 'An error occurred'};
+        _abilityData = {'error': 'Error al obtener la información'};
       });
     } finally {
       setState(() {
@@ -47,102 +340,84 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Lifting State Up Example'),
-        ),
-        body: ConditionalRenderingWidget(
-          isLoading: _isLoading,
-          pokemonData: _pokemonData,
-          fetchPokemonData: _fetchPokemonData,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Buscar habilidad manualmente'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Ingrese el ID o nombre de la habilidad',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final input = _controller.text.trim();
+                if (input.isNotEmpty) {
+                  fetchAbilityData(input);
+                }
+              },
+              child: const Text('Buscar habilidad'),
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const CircularProgressIndicator()
+            else if (_abilityData != null)
+              _abilityData!['error'] != null
+                  ? Text(
+                      _abilityData!['error'],
+                      style: const TextStyle(color: Colors.red),
+                    )
+                  : Table(
+                      border: TableBorder.all(),
+                      children: [
+                        TableRow(children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text(
+                              'Nombre',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(_abilityData!['name']),
+                          ),
+                        ]),
+                        TableRow(children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text(
+                              'Efecto',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              (_abilityData!['effect_entries'] as List)
+                                  .firstWhere(
+                                    (entry) =>
+                                        entry['language']['name'] == 'en',
+                                    orElse: () => {'effect': 'No data'},
+                                  )['effect'],
+                            ),
+                          ),
+                        ]),
+                      ],
+                    )
+            else
+              const Text('Ingrese un ID o nombre para buscar la habilidad'),
+          ],
         ),
       ),
     );
   }
 }
-
-class ConditionalRenderingWidget extends StatelessWidget {
-  final bool isLoading;
-  final Map<String, dynamic>? pokemonData;
-  final Future<void> Function() fetchPokemonData;
-
-  const ConditionalRenderingWidget({
-    super.key,
-    required this.isLoading,
-    required this.pokemonData,
-    required this.fetchPokemonData,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: fetchPokemonData,
-            child: const Text('Fetch Pokémon Data'),
-          ),
-          const SizedBox(height: 20),
-          if (isLoading)
-            const CircularProgressIndicator()
-          else if (pokemonData != null)
-            pokemonData!['error'] != null
-                ? Text(
-                    pokemonData!['error'],
-                    style: const TextStyle(color: Colors.red),
-                  )
-                : Table(
-                    border: TableBorder.all(),
-                    children: [
-                      TableRow(children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Key', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Value', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ]),
-                      TableRow(children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Name'),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(pokemonData!['name']),
-                        ),
-                      ]),
-                      TableRow(children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Height'),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(pokemonData!['height'].toString()),
-                        ),
-                      ]),
-                      TableRow(children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Weight'),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(pokemonData!['weight'].toString()),
-                        ),
-                      ]),
-                    ],
-                  )
-          else
-            const Text('Press the button to fetch Pokémon data'),
-        ],
-      ),
-    );
-  }
-}
-
