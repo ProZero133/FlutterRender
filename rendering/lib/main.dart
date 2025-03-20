@@ -109,27 +109,28 @@ class HomePage extends StatelessWidget {
     required this.onSelectPokemonForComparison,
   });
 
-Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
-  try {
-    final response = await http
-        .get(Uri.parse('https://pokeapi.co/api/v2/pokemon/$pokemonName'));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      onUpdatePokemon(
-        data['name'],
-        data['abilities'],
-      );
-    } else {
+  Future<void> fetchPokemonData(
+      String pokemonName, BuildContext context) async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://pokeapi.co/api/v2/pokemon/$pokemonName'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        onUpdatePokemon(
+          data['name'],
+          data['abilities'],
+        );
+      } else {
+        if (context.mounted) {
+          _showErrorSnackbar(context, 'No se encontró el Pokémon.');
+        }
+      }
+    } catch (e) {
       if (context.mounted) {
-        _showErrorSnackbar(context, 'No se encontró el Pokémon.');
+        _showErrorSnackbar(context, 'Error al obtener los datos del Pokémon.');
       }
     }
-  } catch (e) {
-    if (context.mounted) {
-      _showErrorSnackbar(context, 'Error al obtener los datos del Pokémon.');
-    }
   }
-}
 
   void _showErrorSnackbar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -147,38 +148,38 @@ Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
 
     return Scaffold(
       appBar: AppBar(
-  title: const Text('Pokeapi'),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.favorite),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FavoritesPage(
-              favorites: favorites,
-              onToggleFavorite: onToggleFavorite,
-            ),
+        title: const Text('Pokeapi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FavoritesPage(
+                    favorites: favorites,
+                    onToggleFavorite: onToggleFavorite,
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
-    ),
-    IconButton(
-      icon: const Icon(Icons.compare),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ComparisonPage(
-              firstPokemon: firstPokemonForComparison,
-              secondPokemon: secondPokemonForComparison,
-            ),
+          IconButton(
+            icon: const Icon(Icons.compare),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ComparisonPage(
+                    firstPokemon: firstPokemonForComparison,
+                    secondPokemon: secondPokemonForComparison,
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
-    ),
-  ],
-),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -227,7 +228,8 @@ Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
                   onPressed: () {
                     final input = pokemonSearchController.text.trim();
                     if (input.isEmpty) {
-                      _showErrorSnackbar(context, 'Por favor, ingrese un nombre o ID.');
+                      _showErrorSnackbar(
+                          context, 'Por favor, ingrese un nombre o ID.');
                     } else {
                       fetchPokemonData(input, context);
                     }
@@ -276,54 +278,56 @@ Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
               ),
             const SizedBox(height: 20),
             if (currentPokemonName != null)
-  Column(
-    children: [
-      Text(
-        'Habilidades de $currentPokemonName:',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 10),
-      if (currentPokemonAbilities != null)
-        Wrap(
-          spacing: 10,
-          children: currentPokemonAbilities!.map((ability) {
-            return ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AbilityPage(
-                      abilityUrl: ability['ability']['url'],
-                      onUpdateAbilityName: onUpdateAbilityName,
+              Column(
+                children: [
+                  Text(
+                    'Habilidades de $currentPokemonName:',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  if (currentPokemonAbilities != null)
+                    Wrap(
+                      spacing: 10,
+                      children: currentPokemonAbilities!.map((ability) {
+                        return ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AbilityPage(
+                                  abilityUrl: ability['ability']['url'],
+                                  onUpdateAbilityName: onUpdateAbilityName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(ability['ability']['name']),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      onToggleFavorite(currentPokemonName!);
+                    },
+                    icon: Icon(
+                      favorites.contains(currentPokemonName)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: favorites.contains(currentPokemonName)
+                          ? Colors.red
+                          : null,
+                    ),
+                    label: Text(
+                      favorites.contains(currentPokemonName)
+                          ? 'Eliminar de favoritos'
+                          : 'Añadir a favoritos',
                     ),
                   ),
-                );
-              },
-              child: Text(ability['ability']['name']),
-            );
-          }).toList(),
-        ),
-      const SizedBox(height: 20),
-      ElevatedButton.icon(
-        onPressed: () {
-          onToggleFavorite(currentPokemonName!);
-        },
-        icon: Icon(
-          favorites.contains(currentPokemonName)
-              ? Icons.favorite
-              : Icons.favorite_border,
-          color: favorites.contains(currentPokemonName) ? Colors.red : null,
-        ),
-        label: Text(
-          favorites.contains(currentPokemonName)
-              ? 'Eliminar de favoritos'
-              : 'Añadir a favoritos',
-        ),
-      ),
-    ],
-  )
-else
-  const Text('No se ha seleccionado ningún Pokémon'),
+                ],
+              )
+            else
+              const Text('No se ha seleccionado ningún Pokémon'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
@@ -378,7 +382,8 @@ class AbilityPageState extends State<AbilityPage> {
           _abilityData = data;
           _isLoading = false;
         });
-        widget.onUpdateAbilityName(data['name']); // Actualiza el nombre de la habilidad en el estado principal
+        widget.onUpdateAbilityName(data[
+            'name']); // Actualiza el nombre de la habilidad en el estado principal
       } else {
         setState(() {
           _isLoading = false;
@@ -433,11 +438,10 @@ class AbilityPageState extends State<AbilityPage> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        (_abilityData!['effect_entries'] as List)
-                            .firstWhere(
-                              (entry) => entry['language']['name'] == 'en',
-                              orElse: () => {'effect': 'No disponible'},
-                            )['effect'],
+                        (_abilityData!['effect_entries'] as List).firstWhere(
+                          (entry) => entry['language']['name'] == 'en',
+                          orElse: () => {'effect': 'No disponible'},
+                        )['effect'],
                         style: const TextStyle(fontSize: 16),
                       ),
                     ],
@@ -473,14 +477,15 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
     });
 
     try {
-      final response =
-          await http.get(Uri.parse('https://pokeapi.co/api/v2/ability/$idOrName'));
+      final response = await http
+          .get(Uri.parse('https://pokeapi.co/api/v2/ability/$idOrName'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
           _abilityData = data;
         });
-        widget.onUpdateAbilityName(data['name']); // Actualiza el nombre de la habilidad en el estado principal
+        widget.onUpdateAbilityName(data[
+            'name']); // Actualiza el nombre de la habilidad en el estado principal
       } else {
         setState(() {
           _abilityData = null;
@@ -513,8 +518,7 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: ListView(
           children: [
             TextField(
               controller: _controller,
@@ -559,11 +563,10 @@ class ManualAbilityPageState extends State<ManualAbilityPage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    (_abilityData!['effect_entries'] as List)
-                        .firstWhere(
-                          (entry) => entry['language']['name'] == 'en',
-                          orElse: () => {'effect': 'No disponible'},
-                        )['effect'],
+                    (_abilityData!['effect_entries'] as List).firstWhere(
+                      (entry) => entry['language']['name'] == 'en',
+                      orElse: () => {'effect': 'No disponible'},
+                    )['effect'],
                     style: const TextStyle(fontSize: 16),
                   ),
                 ],
