@@ -459,10 +459,10 @@ class ManualAbilityPage extends StatefulWidget {
   });
 
   @override
-  _ManualAbilityPageState createState() => _ManualAbilityPageState();
+  ManualAbilityPageState createState() => ManualAbilityPageState();
 }
 
-class _ManualAbilityPageState extends State<ManualAbilityPage> {
+class ManualAbilityPageState extends State<ManualAbilityPage> {
   final TextEditingController _controller = TextEditingController();
   bool _isLoading = false;
   Map<String, dynamic>? _abilityData;
