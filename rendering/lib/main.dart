@@ -48,7 +48,7 @@ class PokeApiAPPState extends State<PokeApiAPP> {
     });
   }
 
-  void selectPokemonForComparison(String pokemonName) {
+  void compararPokemon(String pokemonName) {
     setState(() {
       if (_firstPokemonForComparison == null) {
         _firstPokemonForComparison = pokemonName;
@@ -75,7 +75,7 @@ class PokeApiAPPState extends State<PokeApiAPP> {
         onUpdatePokemon: updatePokemon,
         onUpdateAbilityName: updateAbilityName,
         onToggleFavorite: toggleFavorite,
-        onSelectPokemonForComparison: selectPokemonForComparison,
+        onSelectPokemonForComparison: compararPokemon,
       ),
     );
   }
@@ -147,8 +147,38 @@ Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pokeapi'),
-      ),
+  title: const Text('Pokeapi'),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.favorite),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FavoritesPage(
+              favorites: favorites,
+              onToggleFavorite: onToggleFavorite,
+            ),
+          ),
+        );
+      },
+    ),
+    IconButton(
+      icon: const Icon(Icons.compare),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ComparisonPage(
+              firstPokemon: firstPokemonForComparison,
+              secondPokemon: secondPokemonForComparison,
+            ),
+          ),
+        );
+      },
+    ),
+  ],
+),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -246,37 +276,54 @@ Future<void> fetchPokemonData(String pokemonName, BuildContext context) async {
               ),
             const SizedBox(height: 20),
             if (currentPokemonName != null)
-              Column(
-                children: [
-                  Text(
-                    'Habilidades de $currentPokemonName:',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  if (currentPokemonAbilities != null)
-                    Wrap(
-                      spacing: 10,
-                      children: currentPokemonAbilities!.map((ability) {
-                        return ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AbilityPage(
-                                  abilityUrl: ability['ability']['url'],
-                                  onUpdateAbilityName: onUpdateAbilityName,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text(ability['ability']['name']),
-                        );
-                      }).toList(),
+  Column(
+    children: [
+      Text(
+        'Habilidades de $currentPokemonName:',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 10),
+      if (currentPokemonAbilities != null)
+        Wrap(
+          spacing: 10,
+          children: currentPokemonAbilities!.map((ability) {
+            return ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AbilityPage(
+                      abilityUrl: ability['ability']['url'],
+                      onUpdateAbilityName: onUpdateAbilityName,
                     ),
-                ],
-              )
-            else
-              const Text('No se ha seleccionado ningún Pokémon'),
+                  ),
+                );
+              },
+              child: Text(ability['ability']['name']),
+            );
+          }).toList(),
+        ),
+      const SizedBox(height: 20),
+      ElevatedButton.icon(
+        onPressed: () {
+          onToggleFavorite(currentPokemonName!);
+        },
+        icon: Icon(
+          favorites.contains(currentPokemonName)
+              ? Icons.favorite
+              : Icons.favorite_border,
+          color: favorites.contains(currentPokemonName) ? Colors.red : null,
+        ),
+        label: Text(
+          favorites.contains(currentPokemonName)
+              ? 'Eliminar de favoritos'
+              : 'Añadir a favoritos',
+        ),
+      ),
+    ],
+  )
+else
+  const Text('No se ha seleccionado ningún Pokémon'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
@@ -403,7 +450,7 @@ class AbilityPageState extends State<AbilityPage> {
   }
 }
 
-class ManualAbilityPage extends StatelessWidget {
+class ManualAbilityPage extends StatefulWidget {
   final Function(String) onUpdateAbilityName;
 
   const ManualAbilityPage({
@@ -412,14 +459,194 @@ class ManualAbilityPage extends StatelessWidget {
   });
 
   @override
+  _ManualAbilityPageState createState() => _ManualAbilityPageState();
+}
+
+class _ManualAbilityPageState extends State<ManualAbilityPage> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isLoading = false;
+  Map<String, dynamic>? _abilityData;
+
+  Future<void> fetchAbilityData(String idOrName) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response =
+          await http.get(Uri.parse('https://pokeapi.co/api/v2/ability/$idOrName'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _abilityData = data;
+        });
+        widget.onUpdateAbilityName(data['name']); // Actualiza el nombre de la habilidad en el estado principal
+      } else {
+        setState(() {
+          _abilityData = null;
+        });
+        _showErrorSnackbar('No se encontró la habilidad.');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Error al obtener los datos de la habilidad.');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buscar habilidad manualmente'),
       ),
-      body: Center(
-        child: Text('Página para buscar habilidades manualmente'),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Ingrese el ID o nombre de la habilidad',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final input = _controller.text.trim();
+                if (input.isEmpty) {
+                  _showErrorSnackbar('Por favor, ingrese un ID o nombre.');
+                } else {
+                  fetchAbilityData(input);
+                }
+              },
+              child: const Text('Buscar habilidad'),
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const CircularProgressIndicator()
+            else if (_abilityData != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nombre: ${_abilityData!['name']}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Efecto:',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    (_abilityData!['effect_entries'] as List)
+                        .firstWhere(
+                          (entry) => entry['language']['name'] == 'en',
+                          orElse: () => {'effect': 'No disponible'},
+                        )['effect'],
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              )
+            else
+              const Text('Ingrese un ID o nombre para buscar la habilidad'),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class ComparisonPage extends StatelessWidget {
+  final String? firstPokemon;
+  final String? secondPokemon;
+
+  const ComparisonPage({
+    super.key,
+    required this.firstPokemon,
+    required this.secondPokemon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Comparar Pokémon'),
+      ),
+      body: firstPokemon != null && secondPokemon != null
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Comparación entre $firstPokemon y $secondPokemon:',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                // Aquí puedes agregar más detalles de comparación
+              ],
+            )
+          : const Center(
+              child: Text('Selecciona dos Pokémon para comparar.'),
+            ),
+    );
+  }
+}
+
+class FavoritesPage extends StatelessWidget {
+  final List<String> favorites;
+  final Function(String) onToggleFavorite;
+
+  const FavoritesPage({
+    super.key,
+    required this.favorites,
+    required this.onToggleFavorite,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pokémon Favoritos'),
+      ),
+      body: favorites.isNotEmpty
+          ? ListView.builder(
+              itemCount: favorites.length,
+              itemBuilder: (context, index) {
+                final pokemon = favorites[index];
+                return ListTile(
+                  title: Text(pokemon),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    onPressed: () {
+                      onToggleFavorite(pokemon);
+                    },
+                  ),
+                );
+              },
+            )
+          : const Center(
+              child: Text('No hay Pokémon favoritos.'),
+            ),
     );
   }
 }
